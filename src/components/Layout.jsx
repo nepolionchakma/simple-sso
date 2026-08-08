@@ -35,6 +35,9 @@ export default function Layout() {
         <div className="nav-user">
           <span className="user-name">{user.name}</span>
           <span className="role-badge">{user.role}</span>
+          <span className="role-badge" title="Which login path this session came from">
+            {user.source === 'keycloak' ? 'SSO' : 'local'}
+          </span>
           <button type="button" className="btn logout" onClick={handleLogout}>
             Logout
           </button>

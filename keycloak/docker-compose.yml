@@ -1,0 +1,65 @@
+# Keycloak + Postgres for the Simple SSO demo.
+#
+#   cp .env.example .env     # then edit KC_HOSTNAME
+#   docker compose up -d
+
+services:
+  keycloak-postgres:
+    image: postgres:16-alpine
+    container_name: keycloak-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-keycloak_test_pw}
+    volumes:
+      # Realms, users and clients live here, which is why recreating the
+      # Keycloak container never loses your configuration.
+      - keycloak_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U keycloak -d keycloak']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - keycloak-net
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7
+    container_name: keycloak
+    restart: unless-stopped
+    # `start`, not `start-dev`, so behaviour matches production. HTTP is
+    # enabled explicitly because there is no TLS terminator in front locally.
+    command: start --http-enabled=true --hostname-strict=false
+    depends_on:
+      keycloak-postgres:
+        condition: service_healthy
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:-keycloak_test_pw}
+
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:-admin_test_pw}
+
+      # Keycloak builds redirects and the token's `iss` claim from this, so it
+      # must be the address the browser uses - never `localhost`, which inside
+      # the container means the container itself. No default on purpose: a
+      # wrong value fails confusingly, so refuse to start rather than guess.
+      KC_HOSTNAME: ${KC_HOSTNAME:?set KC_HOSTNAME in .env, e.g. http://192.168.56.22:8080}
+
+      KC_HEALTH_ENABLED: 'true'
+      KC_METRICS_ENABLED: 'true'
+    ports:
+      - '8080:8080'
+      - '9000:9000' # health and metrics
+    networks:
+      - keycloak-net
+
+networks:
+  keycloak-net:
+    driver: bridge
+
+volumes:
+  keycloak_postgres_data:

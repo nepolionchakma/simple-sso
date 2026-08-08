@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { USERS } from '../data/users'
 
 export default function Login() {
-  const { user, login } = useAuth()
+  const { user, login, loginWithKeycloak, authError } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [email, setEmail] = useState('')
@@ -30,7 +30,6 @@ export default function Login() {
     <div className="login-wrap">
       <form className="login-card" onSubmit={handleSubmit}>
         <h1 className='text-center'>Sign in</h1>
-        {/* <p className="login-sub">Sign in to access your account</p> */}
 
         <label htmlFor="email">Email</label>
         <input
@@ -60,11 +59,22 @@ export default function Login() {
           Sign in
         </button>
       </form>
-      <form className="login-card" onSubmit={() => { }}>
-        <button disabled className="btn secondary">
+      <div className="login-card">
+        <button
+          type="button"
+          className="btn secondary"
+          onClick={loginWithKeycloak}
+        >
           Log in using SSO
         </button>
-      </form>
+        {authError && <p className="error">{authError}</p>}
+        <p className="demo-note">
+          Sends you to Keycloak to sign in. Try <code>alice</code> /{' '}
+          <code>alice123</code> (admin), <code>eddie</code> /{' '}
+          <code>eddie123</code> (editor), or <code>vera</code> /{' '}
+          <code>vera123</code> (viewer).
+        </p>
+      </div>
 
       <div className="demo-box">
         <h2>Demo accounts</h2>

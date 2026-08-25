@@ -78,9 +78,9 @@ export function GlobalContextProvider({ children }) {
     if (!window.isSecureContext) {
       setAuthError(
         `This page (${window.location.origin}) is not a secure context, so the ` +
-          'browser withholds crypto.subtle and Keycloak cannot build its PKCE ' +
-          'challenge. Open the app on http://localhost:5173 instead of the raw ' +
-          'IP address, or serve it over HTTPS.',
+        'browser withholds crypto.subtle and Keycloak cannot build its PKCE ' +
+        'challenge. Open the app on http://localhost:5173 instead of the raw ' +
+        'IP address, or serve it over HTTPS.',
       )
       return
     }
@@ -113,20 +113,28 @@ export function GlobalContextProvider({ children }) {
     if (didInit.current) return
     didInit.current = true
 
-    const cameFromKeycloak = sessionStorage.getItem(SOURCE_KEY) === 'keycloak'
+    // const cameFromKeycloak = sessionStorage.getItem(SOURCE_KEY) === 'keycloak'
 
     keycloak
       .init({
         // Restores an existing Keycloak session without showing a login form.
         // Skipped for mock sessions so they never pay for a redirect.
-        onLoad: cameFromKeycloak ? 'check-sso' : undefined,
+        onLoad: 'check-sso',
+        silentCheckSsoRedirectUri: window.location.origin + '/silent-check-sso.html',
         pkceMethod: 'S256',
         // Needs third-party cookies, which browsers increasingly block.
         checkLoginIframe: false,
       })
       .then((authenticated) => {
-        // Do not clear `user` when false - it may be a valid mock session.
-        if (authenticated) applyKeycloakSession()
+        // Do not clear `user` when false - it may be a valid mock session. 
+        if (authenticated) {
+          applyKeycloakSession()
+          if (window.location.pathname === '/login' || window.location.pathname === '/') {
+            navigate('/dashboard', { replace: true });
+          }
+        } else {
+          console.log("User isn't login and don't need to resirect.");
+        }
       })
       .catch((error) => {
         console.error('Keycloak init failed:', error)

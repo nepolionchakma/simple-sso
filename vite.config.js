@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
   const pollForChanges = env.DEV_SERVER_POLL === 'true'
 
   return {
-    plugins: [react()],
+    plugins: [react(), basicSsl()],
     server: {
       port: 5173,
       strictPort: true,
